@@ -82,8 +82,7 @@ class Duration(click.ParamType):
         if not value:
             return None
         try:
-            timestamp = convert_to_seconds(value)
-            return timestamp
+            return convert_to_seconds(value)
         except ValueError as exc:
             return self.fail(f"Unable to convert input into duration: {value} {exc}")
 
@@ -104,10 +103,8 @@ class FileOrUrl(click.ParamType):
             return None
         if exists(value):
             try:
-                # first, determine if it is JSON or GZIP
-                tmp = open(value, "rb")  # pylint: disable=consider-using-with
-                magic_bytes = tmp.read(2)
-                tmp.close()
+                with open(value, "rb") as tmp:
+                    magic_bytes = tmp.read(2)
                 if magic_bytes == b"\x1f\x8b":
                     # GZIP file detected
                     return gzip.open(value, "rt")
@@ -116,10 +113,9 @@ class FileOrUrl(click.ParamType):
 
             except FileNotFoundError as exc:
                 return self.fail(f"Unable to open file {value}: {exc}")
+        elif value.endswith(".json") or value.endswith(".json.gz"):
+            return self.fail(f"File {value} does not exist")
         else:
-            # first see if it is a file, but a non-existent one
-            if value.endswith(".json") or value.endswith(".json.gz"):
-                return self.fail(f"File {value} does not exist")
             # convert base domains into a full url base
             return f"https://{value}" if "http" not in value else value
 

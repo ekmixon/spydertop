@@ -248,7 +248,7 @@ No more records can be loaded."
         log.info("Parsing records")
         self.progress = 0.0
 
-        if not lines or len(lines) == 0 or lines[0] == "" or lines[0] == b"":
+        if not lines or lines[0] == "" or lines[0] == b"":
             self.fail(
                 "Loading was successful, but no records were found. \
 Are you asking for the wrong time?"
@@ -287,12 +287,11 @@ Are you asking for the wrong time?"
                 # only save the most recent version of each record
                 if record["id"] not in self._records[short_schema]:
                     self._records[short_schema][record["id"]] = record
-                else:
-                    if (
+                elif (
                         record["time"]
                         > self._records[short_schema][record["id"]]["time"]
                     ):
-                        self._records[short_schema][record["id"]] = record
+                    self._records[short_schema][record["id"]] = record
 
         self._tops.extend(event_tops)
 
@@ -482,10 +481,11 @@ Is the url {self.config.input} correct?"
 
     def log_api(self, name: str, data: Dict[str, Any]) -> None:
         """Send logs to the spyderbat internal logging API"""
-        if not isinstance(self.config.input, str):
-            url = "https://api.spyderbat.com"
-        else:
-            url = self.config.input
+        url = (
+            self.config.input
+            if isinstance(self.config.input, str)
+            else "https://api.spyderbat.com"
+        )
         new_data = {
             "name": name,
             "application": "spydertop",
@@ -527,10 +527,8 @@ Is the url {self.config.input} correct?"
     def get_value(self, key, previous=False) -> Any:
         """Provides the specified field on the most recent or the previous
         event_top_data record"""
-        index = 0 if not previous else -1
-        if not self.tops_valid():
-            return None
-        return self._tops[index][key]
+        index = -1 if previous else 0
+        return self._tops[index][key] if self.tops_valid() else None
 
     def get_top_processes(
         self,
@@ -538,9 +536,11 @@ Is the url {self.config.input} correct?"
         Optional[Dict[str, Union[str, int]]], Optional[Dict[str, Union[str, int]]]
     ]:
         """Get the resource usage records for the processes at the current time"""
-        if not self.tops_valid():
-            return None, None
-        return (self._tops[-1]["processes"], self._tops[0]["processes"])
+        return (
+            (self._tops[-1]["processes"], self._tops[0]["processes"])
+            if self.tops_valid()
+            else (None, None)
+        )
 
     def rebuild_tree(self) -> None:
         """Create a tree structure for the processes, based on the puid and ppuid"""
@@ -744,9 +744,7 @@ Is the url {self.config.input} correct?"
     @property
     def memory(self) -> Optional[Dict[str, int]]:
         """The most recent memory usage data"""
-        if not self.tops_valid():
-            return None
-        return self._meminfo
+        return self._meminfo if self.tops_valid() else None
 
     @property
     def machine(self) -> Optional[Record]:

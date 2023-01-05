@@ -92,7 +92,7 @@ class InputModal(Frame):
     def process_event(self, event):
         assert self.scene is not None
         if isinstance(event, KeyboardEvent):
-            if event.key_code == ord("\n") or event.key_code == Screen.KEY_F10:
+            if event.key_code in [ord("\n"), Screen.KEY_F10]:
                 if self._text_input.is_valid:
                     self._on_submit(self._text_input.value)
                 self.scene.remove_effect(self)
@@ -164,14 +164,13 @@ class NotificationModal(Frame):
 
     def process_event(self, event):
         assert self.scene is not None
-        if isinstance(event, KeyboardEvent):
-            if (
-                event.key_code == ord("\n")
-                or event.key_code == Screen.KEY_ESCAPE
-                or self.delete_count is None
-            ):
-                self.scene.remove_effect(self)
-                return None
+        if isinstance(event, KeyboardEvent) and (
+            event.key_code == ord("\n")
+            or event.key_code == Screen.KEY_ESCAPE
+            or self.delete_count is None
+        ):
+            self.scene.remove_effect(self)
+            return None
         if isinstance(event, MouseEvent) and event.buttons != 0:
             self.scene.remove_effect(self)
         return self._parent.process_event(event)

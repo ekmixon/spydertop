@@ -118,7 +118,7 @@ class MainFrame(Frame):  # pylint: disable=too-many-instance-attributes
             if self._model.machine
             else len(self._model.get_value("cpu_time") or [])
         )
-        for i in range(0, cpu_count):
+        for i in range(cpu_count):
             self._cpus.append(
                 Meter(
                     f"{i:<3}",
@@ -134,10 +134,7 @@ class MainFrame(Frame):  # pylint: disable=too-many-instance-attributes
                     important_value=3,
                 )
             )
-            if i < cpu_count / 2:
-                column = 0
-            else:
-                column = 1
+            column = 0 if i < cpu_count / 2 else 1
             header.add_widget(self._cpus[i], column)
         self._memory = Meter(
             "Mem",
@@ -299,7 +296,7 @@ class MainFrame(Frame):  # pylint: disable=too-many-instance-attributes
 
             self._footer.change_button_text(
                 "Play" if self._model.config["play"] else "Pause",
-                "Play" if not self._model.config["play"] else "Pause",
+                "Pause" if self._model.config["play"] else "Play",
             )
             self.fix()
             self.needs_screen_refresh = True
@@ -399,11 +396,14 @@ class MainFrame(Frame):  # pylint: disable=too-many-instance-attributes
                 self._footer.click(-event.key_code - 2)
                 return None
             if event.key_code in {Screen.KEY_TAB, Screen.KEY_BACK_TAB}:
-                current_tab_index = 0
-                for i, tab in enumerate(self._tabs):
-                    if tab.text.lower() == self._model.config["tab"]:
-                        current_tab_index = i
-                        break
+                current_tab_index = next(
+                    (
+                        i
+                        for i, tab in enumerate(self._tabs)
+                        if tab.text.lower() == self._model.config["tab"]
+                    ),
+                    0,
+                )
                 offset = 1 if event.key_code == Screen.KEY_TAB else -1
                 next_tab = self._tabs[
                     (current_tab_index + offset) % len(self._tabs)

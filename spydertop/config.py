@@ -121,10 +121,10 @@ See --help for a list of valid log levels."
         try:
             self._load_cached_settings()
         except Exception as exc:  # pylint: disable=broad-except
-            log.info("Failed to load cached settings: " + str(exc))
+            log.info(f"Failed to load cached settings: {str(exc)}")
 
         try:
-            self.api_key = config_default.get("api_key", None)
+            self.api_key = config_default.get("api_key")
             self.org = org or config_default.get("org", None)
             self.machine = source or config_default.get("machine", None)
             # command-line arguments are from the user, so are considered confirmed
@@ -239,9 +239,7 @@ Section default does not contain {exc.args[0]}, and it was not specified as a co
     # this is just for convenient access to the settings
     # and to track settings changes
     def __getitem__(self, key: str) -> Any:
-        if key not in self.settings:
-            return None
-        return self.settings[key]
+        return None if key not in self.settings else self.settings[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
         self.settings[key] = value
