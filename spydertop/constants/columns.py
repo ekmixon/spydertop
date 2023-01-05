@@ -130,13 +130,11 @@ def get_mem_per(model: AppModel, process: Record):
     if record is None:
         return None
     mem = record["rss"] * PAGE_SIZE
-    mem_model = model.memory
-    if mem_model:
+    if mem_model := model.memory:
         mem /= mem_model["MemTotal"]
     else:
         mem = 0
-    mem = round(mem * 100, 1)
-    return mem
+    return round(mem * 100, 1)
 
 
 def get_time_plus_value(model: AppModel, process: Record):
@@ -494,9 +492,7 @@ def color_severity(_m, _f, severity: Severity) -> str:
         return "${11}M"
     if severity == Severity.HIGH:
         return "${3,1}H"
-    if severity == Severity.CRITICAL:
-        return "${1,1}C"
-    return "${8,1}?"
+    return "${1,1}C" if severity == Severity.CRITICAL else "${8,1}?"
 
 
 SEVERITIES = {"info": -1, "low": 0, "medium": 1, "high": 2, "critical": 3}

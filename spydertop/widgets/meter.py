@@ -67,7 +67,7 @@ class Meter(Widget):
     def required_height(self, offset, width):
         return 1  # meters are always 1-line
 
-    def update(self, frame_no):  # pylint: disable=too-many-locals
+    def update(self, frame_no):    # pylint: disable=too-many-locals
         """
         Draws the metric onto the screen as:
           LBL[|||||||||||       VALUE]
@@ -76,7 +76,6 @@ class Meter(Widget):
         assert self._frame is not None
 
         padding_start = 2
-        padding_end = 1
         label_width = 3
 
         # draw label
@@ -103,6 +102,7 @@ class Meter(Widget):
         self._frame.canvas.paint(
             "[", self._x + padding_start + label_width, self._y, color, attr, background
         )
+        padding_end = 1
         self._frame.canvas.paint(
             "]", self._x + self._w - 1 - padding_end, self._y, color, attr, background
         )
@@ -128,17 +128,7 @@ class Meter(Widget):
         # print end label
         if self._percent:
             # convert value to a percentage
-            end_label = (
-                str(
-                    round(
-                        sum(self._values[: self.important_value + 1])
-                        / self.total
-                        * 100,
-                        1,
-                    )
-                )
-                + "%"
-            )
+            end_label = f"{str(round(sum(self._values[:self.important_value + 1]) / self.total * 100, 1))}%"
         else:
             # pretty print value / total
             # typing seems to not understand that sum works on lists of floats

@@ -101,9 +101,11 @@ class FailureFrame(Frame):
 
     # pylint: disable=duplicate-code
     def process_event(self, event):
-        if isinstance(event, KeyboardEvent):
-            if event.key_code in {ord("q"), ord("Q")}:
-                self._quit()
+        if isinstance(event, KeyboardEvent) and event.key_code in {
+            ord("q"),
+            ord("Q"),
+        }:
+            self._quit()
         return super().process_event(event)
 
     def _recover(self, action: str) -> None:

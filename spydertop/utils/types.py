@@ -54,8 +54,7 @@ class Bytes:
     @staticmethod
     def parse_bytes(value: str) -> int:
         """Parse a string into bytes"""
-        if value.endswith("B"):
-            value = value[:-1]
+        value = value.removesuffix("B")
         if value.endswith("K"):
             return int(float(value[:-1]) * 1024)
         if value.endswith("M"):
@@ -291,18 +290,12 @@ class CustomTextWrapper(TextWrapper):
 
         # lines loop
         while chunks:
-            # the line should always start with the previous style
-            cur_line = []
             cur_len = 0
 
             # -- from standard implementation --
 
             # Figure out which static string will prefix this line.
-            if lines:
-                indent = self.subsequent_indent
-            else:
-                indent = self.initial_indent
-
+            indent = self.subsequent_indent if lines else self.initial_indent
             # Maximum width for this line.
             width = self.width - len(indent)
 
@@ -311,11 +304,7 @@ class CustomTextWrapper(TextWrapper):
             if self.drop_whitespace and chunks[-1].strip() == "" and lines:
                 del chunks[-1]
 
-            # -- end standard implementation --
-
-            cur_line.append(indent)
-            cur_line.append(cur_style)
-
+            cur_line = [indent, cur_style]
             # words loop
             while chunks:
                 matches = re.findall(f"({COLOR_REGEX})", chunks[-1])
@@ -327,12 +316,11 @@ class CustomTextWrapper(TextWrapper):
                     for match in matches:
                         length -= len(match[0])
 
-                if cur_len + length <= width:
-                    cur_line.append(chunks.pop())
-                    cur_len += length
-                else:
+                if cur_len + length > width:
                     break
 
+                cur_line.append(chunks.pop())
+                cur_len += length
             # The current line is full, and the next chunk is too big to
             # fit on *any* line (not just this one).
             if chunks and len(chunks[-1]) > width:
@@ -379,21 +367,14 @@ class TimeSpanTracker:
         start_index = bisect.bisect_left(self.times, start)
         inserted = False
 
-        if start_index != len(self.times) and self.times[start_index] == start:
             # the start time is already in the list.
             # If it is an end time, we set the previous time as start.
             # if it is the start time, we do nothing
-            if start_index % 2 == 1:
-                start_index -= 1
-        else:
-            # the start time is not in the list.
-            # If it is in the middle of a time span, we go back to the previous time;
-            # if it is in-between time spans, we insert the start time
-            if start_index % 2 == 1:
-                start_index -= 1
-            else:
-                self.times.insert(start_index, start)
-                inserted = True
+        if start_index % 2 == 1:
+            start_index -= 1
+        elif start_index == len(self.times) or self.times[start_index] != start:
+            self.times.insert(start_index, start)
+            inserted = True
 
         # locate the correct place for the end time
         end_index = bisect.bisect_left(self.times, end)

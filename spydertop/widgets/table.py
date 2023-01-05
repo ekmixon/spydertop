@@ -75,11 +75,10 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
                 if row[1][0] == self._state["id_to_follow"]:
                     self.value = i
                     break
-        else:
-            if len(self._filtered_rows) > 0 and 0 <= self.value < len(
+        elif len(self._filtered_rows) > 0 and 0 <= self.value < len(
                 self._filtered_rows
             ):
-                self._set_state(id_to_follow=self._filtered_rows[self.value][1][0])
+            self._set_state(id_to_follow=self._filtered_rows[self.value][1][0])
 
         # validate the selected row
         if (
@@ -147,7 +146,7 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
                     line = str(displayable_row[j]).replace("\n", " ")
                     # first, the space needed to pad the text to the correct alignment
                     # is calculated.
-                    extra_space = width - len(re.sub(COLOR_REGEX, "", str(line)))
+                    extra_space = width - len(re.sub(COLOR_REGEX, "", line))
                     left_space = (
                         0
                         if col.align == Alignment.LEFT
@@ -163,10 +162,10 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
 
                     to_paint = str(line)
                     if extra_space < 0:
-                        to_paint = to_paint[: width - 1] + "…"
+                        to_paint = f"{to_paint[:width - 1]}…"
                     # finally, the line is painted.
                     self._frame.canvas.paint(
-                        to_paint + " ",
+                        f"{to_paint} ",
                         self._x + x_offset,
                         self._y + y_offset,
                         color,
@@ -226,34 +225,33 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
             if event.key_code == Screen.KEY_END:
                 self.value = len(self._filtered_rows) - 1
                 return None
-        if isinstance(event, MouseEvent):  # pylint: disable=too-many-nested-blocks
-            if event.buttons & event.LEFT_CLICK != 0:
-                this_x, this_y = self.get_location()
-                relative_x = event.x - this_x
-                relative_y = event.y - this_y
-                if relative_x < 0 or relative_x >= self._w:
-                    return event
-                if relative_y < 0 or relative_y >= self._h:
-                    return event
-                if relative_y == 0:
-                    # this is the header
-                    relative_x += self._horizontal_offset
-                    for col in self.columns:
-                        if not col.enabled:
-                            continue
-                        if relative_x - col.max_width - 1 < 0 or col.max_width == 0:
-                            if self._config["sort_column"] == col.header_name:
-                                self._config["sort_ascending"] = not self._config[
-                                    "sort_ascending"
-                                ]
-                            else:
-                                self._config["sort_column"] = col.header_name
-                            break
-                        relative_x -= col.max_width + 1
-                else:
-                    # select the clicked row
-                    self.value = relative_y - 1 + self._vertical_offset
-                return None
+        if isinstance(event, MouseEvent) and event.buttons & event.LEFT_CLICK != 0:
+            this_x, this_y = self.get_location()
+            relative_x = event.x - this_x
+            relative_y = event.y - this_y
+            if relative_x < 0 or relative_x >= self._w:
+                return event
+            if relative_y < 0 or relative_y >= self._h:
+                return event
+            if relative_y == 0:
+                # this is the header
+                relative_x += self._horizontal_offset
+                for col in self.columns:
+                    if not col.enabled:
+                        continue
+                    if relative_x - col.max_width < 1 or col.max_width == 0:
+                        if self._config["sort_column"] == col.header_name:
+                            self._config["sort_ascending"] = not self._config[
+                                "sort_ascending"
+                            ]
+                        else:
+                            self._config["sort_column"] = col.header_name
+                        break
+                    relative_x -= col.max_width + 1
+            else:
+                # select the clicked row
+                self.value = relative_y - 1 + self._vertical_offset
+            return None
         return event
 
     def required_height(self, offset, width):
@@ -273,7 +271,7 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
         :param sortable_rows: a list of lists of sortable data, each representing a row
         """
         assert len(displayable_rows) == len(sortable_rows)
-        if len(displayable_rows) != 0:
+        if displayable_rows:
             assert len(displayable_rows[0]) == len(sortable_rows[0])
 
         self._rows = list(zip(displayable_rows, sortable_rows))  # type: ignore
@@ -289,11 +287,7 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
         if self._config["tree"] and self._config["tab"] == "processes":
             # we need the columns to have an ID
             assert self.columns[0].header_name == "ID"
-            # refactor cached sortable data to be indexed by id
-            sortable = {}
-            for row in self._rows:
-                sortable[row[1][0]] = row
-
+            sortable = {row[1][0]: row for row in self._rows}
             self._tree_rows = self._sort_level(self.tree, sortable, 0, [])
         else:
             self._rows = self._simple_sort(self._rows)
@@ -343,13 +337,11 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
                             return False
                     elif row[1][index] <= float(column_match[1][1:]):
                         return False
-                # handle nots
                 elif column_match[1][0] == "!" and column_match[1][1:] in str(
                     row[0][index]
                 ):
                     return False
-                # handle case with no operator
-                elif (column_match[1][0] != "!") and not column_match[1] in str(
+                elif column_match[1][0] != "!" and column_match[1] not in str(
                     row[0][index]
                 ):
                     return False
@@ -361,7 +353,7 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
             [str(v) for i, v in enumerate(row[0]) if self.columns[i].enabled]
         )
 
-        if len(rest) > 0 and rest[0] == "!":
+        if rest != "" and rest[0] == "!":
             return rest[1:] not in combined
 
         return rest in combined
@@ -372,11 +364,9 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
         """
         column_matches = []
         match_regex = re.compile(r"\s*(\S+): ?(\S+)( +|$)")
-        match = re.match(match_regex, value)
-        while match:
-            column_matches.append((match.group(1), match.group(2)))
+        while match := re.match(match_regex, value):
+            column_matches.append((match[1], match[2]))
             value = value[match.end() :]
-            match = re.match(match_regex, value)
         return column_matches, value.strip()
 
     def fix_vert_offset(self):
@@ -440,7 +430,7 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
                 depth,
                 branch is None
                 or branch[0]
-                or len([x for x in branch[1].keys() if x in rows]) == 0,
+                or not [x for x in branch[1].keys() if x in rows],
                 i == len(level) - 1,
                 parents_end,
             )
@@ -465,7 +455,7 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
 
     def _simple_sort(self, rows: List[InternalRow]) -> List[InternalRow]:
         """Sort a list of rows by a key, putting all Nones at the end."""
-        if len(rows) == 0:
+        if not rows:
             return []
         key = self._config["sort_column"]
         ascending = self._config["sort_ascending"]
@@ -499,8 +489,10 @@ class Table(Widget):  # pylint: disable=too-many-instance-attributes
         if depth == 0:
             return ""
         return (
-            "".join(["   " if b else "│  " for b in parents_end[1:]])
-            + ("├" if not end else "└")
+            (
+                "".join(["   " if b else "│  " for b in parents_end[1:]])
+                + ("└" if end else "├")
+            )
             + ("─" if not_expandable else "+")
             + " "
         )

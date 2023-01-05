@@ -115,11 +115,13 @@ class ConfigurationFrame(Frame):  # pylint: disable=too-many-instance-attributes
 
     def process_event(self, event):
         """Processes events from the user"""
-        if isinstance(event, KeyboardEvent):
-            if event.key_code == ord("\n"):
-                if self._on_submit:
-                    self._on_submit()
-                    self._on_submit = None
+        if (
+            isinstance(event, KeyboardEvent)
+            and event.key_code == ord("\n")
+            and self._on_submit
+        ):
+            self._on_submit()
+            self._on_submit = None
         return super().process_event(event)
 
     def build_next_layout(  # pylint: disable=too-many-branches,too-many-statements,too-many-return-statements
@@ -315,11 +317,14 @@ logging into your account on the website.\
                         self.trigger_build()
                         self._screen.force_update()
                         return
-                    if self.cache["looking_for_sources"] and sources is not None:
-                        if len(sources) == 0:
-                            sleep(1)
-                            load_sources()
-                            return
+                    if (
+                        self.cache["looking_for_sources"]
+                        and sources is not None
+                        and len(sources) == 0
+                    ):
+                        sleep(1)
+                        load_sources()
+                        return
                     self.set_cache(
                         sources=[
                             source
@@ -334,9 +339,9 @@ logging into your account on the website.\
                 self.thread = Thread(target=load_sources)
                 self.thread.start()
                 self.build_loading(
-                    "Loading sources..."
-                    if not self.cache["looking_for_sources"]
-                    else "Looking for sources..."
+                    "Looking for sources..."
+                    if self.cache["looking_for_sources"]
+                    else "Loading sources..."
                 )
                 return
 
@@ -372,7 +377,7 @@ Once you have a source configured, you can continue.\
                             )
                         )
                     ]
-                    if len(sources) == 0:
+                    if not sources:
                         self.build_instructions(
                             f"No sources matched '{self.cache['source_glob']}'",
                             lambda: self.set_cache(source_glob=None),
@@ -756,7 +761,7 @@ arguments (except for the API Key).\
             value = getattr(self.config, key.lower())
             if key == "API_Key":
                 # Show only the first and last few characters of the API key
-                value = value[:5] + "..." + value[-5:]
+                value = f"{value[:5]}...{value[-5:]}"
 
             checkbox = CheckBox(
                 value,
@@ -783,7 +788,7 @@ arguments (except for the API Key).\
 
     def save_config(self, attributes: List[str]) -> None:
         """Save the configuration to the config file"""
-        if len(attributes) == 0:
+        if not attributes:
             self.trigger_build()
             return
         try:

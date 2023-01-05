@@ -27,14 +27,11 @@ U = TypeVar("U")
 
 def map_optional(func: Callable[[T], U], value: Optional[T]) -> Optional[U]:
     """Map a function over an optional value, returning None if the value is None"""
-    if value is None:
-        return None
-    return func(value)
+    return None if value is None else func(value)
 
 
 def pretty_time(time: float) -> str:
     """Format a time in a human readable format, similar to the format used in htop"""
-    centiseconds = int(time * 100) % 100
     seconds = int(time) % 60
     minutes = int(time / 60) % 60
     hours = int(time / 3600) % 24
@@ -47,6 +44,7 @@ def pretty_time(time: float) -> str:
                     microseconds = int(time * 1_000_000)
                     return f"{microseconds}μs"
                 return f"{milliseconds}ms"
+            centiseconds = int(time * 100) % 100
             return f"{minutes}:{seconds:02d}.{centiseconds:02d}"
         return f"${{6}}{hours}h${{7}}{minutes:02d}:{seconds:02d}"
     return f"${{2}}{days}d${{6}}{hours:02d}${{7}}:{minutes:02d}:{seconds:02d}"
@@ -61,9 +59,12 @@ def pretty_datetime(  # pylint: disable=too-many-return-statements
     if delta.days == 0:
         if delta.seconds < 60:
             return f"${{2}}{delta.seconds} seconds ago"
-        if delta.seconds < 3600:
-            return f"${{2}}{delta.seconds // 60} minutes ago"
-        return f"${{3}}{delta.seconds // 3600} hours ago"
+        else:
+            return (
+                f"${{2}}{delta.seconds // 60} minutes ago"
+                if delta.seconds < 3600
+                else f"${{3}}{delta.seconds // 3600} hours ago"
+            )
     if delta.days == 1:
         return "${3}Yesterday"
     if delta.days < 7:

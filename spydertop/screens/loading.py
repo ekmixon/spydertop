@@ -103,9 +103,9 @@ class LoadingFrame(Frame):
             FuncLabel(
                 lambda: "${8,1}Loading time " + str(model.time)
                 if model.time is not None
-                else "${8,1}Loading from " + model.config.input.name
-                if not isinstance(model.config.input, str)
-                else "${8,1}Loading from " + model.config.input,
+                else "${8,1}Loading from " + model.config.input
+                if isinstance(model.config.input, str)
+                else "${8,1}Loading from " + model.config.input.name,
                 align="^",
                 parser=ExtendedParser(),
             )
@@ -126,9 +126,9 @@ class LoadingFrame(Frame):
         name_len = len(re.sub(COLOR_REGEX, "", HUGE_NAME.split("\n", maxsplit=1)[0]))
         padding = (" " * name_len + "\n") * 5
         extended_huge_name = padding + HUGE_NAME + padding
-        return ("\n" * header_padding) + "\n".join(
+        return "\n" * header_padding + "\n".join(
             [
-                logoline + " " + nameline
+                f"{logoline} {nameline}"
                 for logoline, nameline in zip(
                     LOGO.split("\n"), extended_huge_name.split("\n")
                 )
@@ -149,9 +149,11 @@ class LoadingFrame(Frame):
         super().update(frame_no)
 
     def process_event(self, event):
-        if isinstance(event, KeyboardEvent):
-            if event.key_code in {ord("q"), ord("Q")}:
-                self._quit()
+        if isinstance(event, KeyboardEvent) and event.key_code in {
+            ord("q"),
+            ord("Q"),
+        }:
+            self._quit()
         return super().process_event(event)
 
     @staticmethod

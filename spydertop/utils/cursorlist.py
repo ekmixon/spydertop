@@ -41,7 +41,7 @@ class CursorList(Generic[CT]):
         self.data = data
         if cursor:
             self.cursor = cursor
-        if len(self.data) == 0:
+        if not self.data:
             return
         self._update_data()
 
@@ -71,7 +71,7 @@ class CursorList(Generic[CT]):
 
         # case: index was invalid
         if self.index == -1:
-            self.index = int(len(self.data) / 2)
+            self.index = len(self.data) // 2
 
         # case: data is empty
         if len(self.data) == 0:
@@ -93,12 +93,10 @@ class CursorList(Generic[CT]):
         # case: cursor is in list or above it
         direction = 1 if key_vals[self.index] <= self.cursor else -1
 
-        while True:
-            if (
-                key_vals[self.index] <= self.cursor
-                and key_vals[self.index + 1] > self.cursor
-            ):
-                break
+        while (
+            key_vals[self.index] > self.cursor
+            or key_vals[self.index + 1] <= self.cursor
+        ):
             self.index += direction
 
             # out-of-bounds check
